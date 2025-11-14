@@ -23,6 +23,7 @@ use quickbooks_types::Customer;
 let min_balance = 1000.0;
 let ids = vec!["1", "2", "3"];
 
+// You can pass in an iterator or a slice for the `in` clause, or a tuple of literals.
 let query = qb_sql!(
     select display_name, balance from Customer
     where balance >= min_balance
@@ -30,6 +31,15 @@ let query = qb_sql!(
     order by display_name asc
     limit 10
 );
+
+// The above is equivalent to:
+// let query = qb_sql!(
+//     select display_name, balance from Customer
+//     where balance >= min_balance
+//     and id in (1, 2, 3)
+//     order by display_name asc
+//     limit 10
+// );
 
 // The `query` variable is now a `Query<Customer>` struct.
 // You can generate the final query string to be sent to the QBO API.

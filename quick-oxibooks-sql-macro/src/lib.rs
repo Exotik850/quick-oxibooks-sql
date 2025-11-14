@@ -294,11 +294,28 @@ impl SqlQuery {
                 let operator = c.operator.to_tokens();
                 let values = &c.values;
 
+                // For IN operator with a single expression, treat it as an iterator
+                let values_code = if matches!(c.operator, Operator::In) && values.len() == 1 {
+                    let expr = &values[0];
+                    quote! {
+                        {
+                            let mut vals = Vec::new();
+                            for v in #expr {
+                                vals.push(v.to_string());
+                            }
+                            vals
+                        }
+                    }
+                } else {
+                    // Multiple values or non-IN operators: call to_string on each
+                    quote! { vec![#(#values.to_string()),*] }
+                };
+
                 quote! {
                     let clause = WhereClause {
                         field: stringify!(#field_name),
                         operator: #operator,
-                        values: vec![#(#values.to_string()),*],
+                        values: #values_code,
                     };
                     unsafe {
                         query = query.condition(clause);

@@ -318,4 +318,24 @@ mod tests {
             "select DisplayName from Customer where Title IN ('Mr', 'Mrs', 'Dr')"
         );
     }
+
+    #[test]
+    fn test_in_iterator() {
+        let ids = vec!["1", "2", "3", "4", "5"];
+        let query = qb_sql!(
+            select * from Customer
+            where id in (ids)
+        );
+
+        assert_eq!(query.condition.len(), 1);
+        assert_eq!(query.condition[0].field, "Id");
+        assert_eq!(query.condition[0].operator, Operator::In);
+        assert_eq!(query.condition[0].values.len(), 5);
+
+        let query_string = query.query_string();
+        assert_eq!(
+            query_string,
+            "select * from Customer where Id IN ('1', '2', '3', '4', '5')"
+        );
+    }
 }
