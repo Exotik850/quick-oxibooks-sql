@@ -51,24 +51,30 @@ assert_eq!(
 );
 ```
 
-### Getting a Query String Directly with `qb_sql_str!`
+### Using a Query object with `quick-oxibooks`
 
-If you just need the final query string, the `qb_sql_str!` macro provides a convenient shortcut. It works just like `qb_sql!` but returns the `String` directly.
+You can use the generated `Query` object with a `QBContext` to execute the query against the QuickBooks Online API.
 
 ```rust
-use quick_oxibooks_sql::qb_sql_str;
+use quick_oxibooks::{Environment, QBContext};
+use quick_oxibooks_sql::qb_sql;
 use quickbooks_types::Customer;
+use ureq::Agent;
 
-let name_filter = "John%";
-let query_string = qb_sql_str!(
-    select * from Customer
-    where display_name like name_filter
+let client = Agent::new_with_defaults();
+let qb = QBContext::new(
+    Environment::SANDBOX,
+    "your_company_id".to_string(),
+    "your_access_token".to_string(),
+    &client,
+)?;
+let query = qb_sql!(
+    select display_name, balance from Customer
+    where balance >= 1000.0
+    order by display_name asc
+    limit 10
 );
-
-assert_eq!(
-    query_string,
-    "select * from Customer where DisplayName LIKE 'John%'"
-);
+let results = query.execute(&qb, &client)?;
 ```
 
 ### Supported SQL Syntax
@@ -79,7 +85,7 @@ The macros support a subset of SQL syntax relevant to the QuickBooks Online API:
 - **`FROM`**: Specify the QuickBooks entity (e.g., `from Customer`). The entity must implement the `QBItem` trait from `quickbooks-types`.
 - **`WHERE`**: Filter results using one or more conditions joined by `and`.
   - **Operators**: `=`, `like`, `>`, `<`, `>=`, `<=`, `in`.
-  - The `in` operator accepts a tuple of literals or a variable that is a `Vec` or slice (e.g., `id in (1, 2, 3)` or `id in (my_ids)`).
+  - The `in` operator accepts a tuple of literals or a type that implements IntoIterator for Display types (e.g., `id in (1, 2, 3)` or `id in (my_ids)`).
 - **`ORDER BY`**: Sort results by one or more fields, with `asc` or `desc` direction (e.g., `order by display_name asc, balance desc`).
 - **`LIMIT`**: Restrict the number of records returned.
 - **`OFFSET`**: Start the result set at a specific offset, for pagination.

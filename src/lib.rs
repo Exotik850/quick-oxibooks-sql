@@ -1,16 +1,8 @@
 // Re-export the procedural macro
 pub use quick_oxibooks_sql_macro::qb_sql;
-
 use quickbooks_types::QBItem;
 
-#[macro_export]
-macro_rules! qb_sql_str {
-    ($($input:tt) *) => {{
-        let query: Query<_> = qb_sql!($($input )*);
-        query.query_string()
-    }};
-}
-
+/// Struct representing a SQL-like query for QuickBooks entities
 #[derive(Debug, PartialEq, Clone)]
 pub struct Query<QB> {
     fields: Vec<&'static str>,
@@ -94,6 +86,21 @@ impl<QB: QBItem> Query<QB> {
         }
 
         query
+    }
+
+    #[cfg(feature = "api")]
+    pub fn execute(
+        &self,
+        qb: &quick_oxibooks::QBContext,
+        client: &ureq::Agent,
+    ) -> Result<Vec<QB>, quick_oxibooks::error::APIError> {
+        unsafe { quick_oxibooks::functions::query::qb_query_raw::<QB>(self, qb, client) }
+    }
+}
+
+impl<QB: QBItem> std::fmt::Display for Query<QB> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.query_string())
     }
 }
 
@@ -305,23 +312,8 @@ mod tests {
     }
 
     #[test]
-    fn test_qb_sql_str_macro() {
-        let title1 = "Mr";
-        let title2 = "Mrs";
-        let query_string = qb_sql_str!(
-            select display_name from Customer
-            where title in (title1, title2, "Dr")
-        );
-
-        assert_eq!(
-            query_string,
-            "select DisplayName from Customer where Title IN ('Mr', 'Mrs', 'Dr')"
-        );
-    }
-
-    #[test]
     fn test_in_iterator() {
-        let ids = vec!["1", "2", "3", "4", "5"];
+        let ids = vec![1, 2, 3, 4, 5];
         let query = qb_sql!(
             select * from Customer
             where id in (ids)

@@ -298,13 +298,7 @@ impl SqlQuery {
                 let values_code = if matches!(c.operator, Operator::In) && values.len() == 1 {
                     let expr = &values[0];
                     quote! {
-                        {
-                            let mut vals = Vec::new();
-                            for v in #expr {
-                                vals.push(v.to_string());
-                            }
-                            vals
-                        }
+                      #expr.into_iter().map(|v| v.to_string()).collect::<Vec<String>>()
                     }
                 } else {
                     // Multiple values or non-IN operators: call to_string on each

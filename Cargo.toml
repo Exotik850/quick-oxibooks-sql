@@ -12,3 +12,9 @@ categories = ["api-clients", "web-programming"]
 pastey = "0.1.1"
 quickbooks-types = "0.1.1"
 quick-oxibooks-sql-macro = { path = "./quick-oxibooks-sql-macro" }
+quick-oxibooks = { version = "0.1.2", optional = true }
+ureq = { version = "3.0", optional = true }
+
+[features]
+default = ["api"]
+api = ["dep:quick-oxibooks", "dep:ureq"]
