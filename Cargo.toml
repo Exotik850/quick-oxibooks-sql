@@ -1,0 +1,14 @@
+[package]
+name = "quick-oxibooks-sql"
+version = "0.1.0"
+edition = "2024"
+authors = ["@exotik850"]
+description = "A library to construct type-checked and safe SQL queries for Oxibooks."
+license = "MIT"
+keywords = ["quickbooks", "quickbooks-online", "api", "client", "rust"]
+categories = ["api-clients", "web-programming"]
+
+[dependencies]
+pastey = "0.1.1"
+quickbooks-types = "0.1.1"
+quick-oxibooks-sql-macro = { path = "./quick-oxibooks-sql-macro" }
