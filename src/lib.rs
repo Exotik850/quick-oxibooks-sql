@@ -4,21 +4,26 @@ use std::fmt::Display;
 pub use quick_oxibooks_sql_macro::qb_sql;
 use quickbooks_types::QBItem;
 
-/// Struct representing a SQL-like query for QuickBooks entities
+/// Struct representing a SQL-like query for `QuickBooks` entities
 #[derive(Debug, PartialEq, Clone)]
 pub struct Query<QB> {
-    fields: Vec<&'static str>,
     condition: Vec<WhereClause>,
     order: Vec<OrderClause>,
     limit: Option<Limit>,
     _phantom: std::marker::PhantomData<QB>,
 }
 
+impl<QB: QBItem> Default for Query<QB> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<QB: QBItem> Query<QB> {
     /// Create a new empty query
+    #[must_use] 
     pub fn new() -> Self {
         Query {
-            fields: Vec::new(),
             condition: Vec::new(),
             order: Vec::new(),
             limit: None,
@@ -26,21 +31,12 @@ impl<QB: QBItem> Query<QB> {
         }
     }
 
-    /// Add a field to select in the query
-    ///
-    /// # Safety
-    /// This function is unsafe because it accepts a raw string slice as the field name.
-    /// The caller must ensure that the field name is valid and corresponds to a field in the QuickBooks entity.
-    pub unsafe fn field(mut self, field: &'static str) -> Self {
-        self.fields.push(field);
-        self
-    }
-
     /// Add a condition to the query
     ///
     /// # Safety
     /// This function is unsafe because it accepts a raw `WhereClause`.
-    /// The caller must ensure that the `WhereClause` is valid and corresponds to the QuickBooks entity.
+    /// The caller must ensure that the `WhereClause` is valid and corresponds to the `QuickBooks` entity.
+    #[must_use] 
     pub unsafe fn condition(mut self, condition: WhereClause) -> Self {
         self.condition.push(condition);
         self
@@ -50,36 +46,24 @@ impl<QB: QBItem> Query<QB> {
     ///
     /// # Safety
     /// This function is unsafe because it accepts a raw string slice as the field name.
-    /// The caller must ensure that the field name is valid and corresponds to a field in the QuickBooks entity.
+    /// The caller must ensure that the field name is valid and corresponds to a field in the `QuickBooks` entity.
+    #[must_use] 
     pub unsafe fn order(mut self, field: &'static str, order: Order) -> Self {
         self.order.push(OrderClause { field, order });
         self
     }
 
     /// Set a limit on the number of results returned by the query
+    #[must_use] 
     pub fn limit(mut self, number: u32, offset: Option<u32>) -> Self {
         self.limit = Some(Limit { number, offset });
         self
     }
 
     /// Generate the query string
+    #[must_use] 
     pub fn query_string(&self) -> String {
-        let mut query = String::new();
-
-        match &self.fields[..] {
-            [] => query.push_str("select *"),
-            fields => {
-                query.push_str("select ");
-                for (i, field) in fields.iter().enumerate() {
-                    if i > 0 {
-                        query.push_str(", ");
-                    }
-                    query.push_str(field);
-                }
-            }
-        }
-
-        query.push_str(&format!(" from {}", QB::name()));
+        let mut query = format!("select * from {}", QB::name());
 
         if !self.condition.is_empty() {
             query.push_str(" where");
@@ -95,7 +79,7 @@ impl<QB: QBItem> Query<QB> {
             query.push_str(" order by");
             for (i, ord) in self.order.iter().enumerate() {
                 if i > 0 {
-                    query.push_str(",");
+                    query.push(',');
                 }
                 ord.extend_query(&mut query);
             }
@@ -109,7 +93,7 @@ impl<QB: QBItem> Query<QB> {
     }
 
     #[cfg(feature = "api")]
-    /// Execute the query against the QuickBooks API, returning a vector of results or an error
+    /// Execute the query against the `QuickBooks` API, returning a vector of results or an error
     pub fn execute(
         &self,
         qb: &quick_oxibooks::QBContext,
@@ -137,7 +121,7 @@ impl Limit {
     fn extend_query(&self, query: &mut String) {
         query.push_str(&format!(" LIMIT {}", self.number));
         if let Some(offset) = self.offset {
-            query.push_str(&format!(" OFFSET {}", offset));
+            query.push_str(&format!(" OFFSET {offset}"));
         }
     }
 }
@@ -179,6 +163,7 @@ pub struct WhereClause {
 
 impl WhereClause {
     /// Create a new where clause
+    #[must_use] 
     pub fn new(field: &'static str, operator: Operator) -> Self {
         Self {
             field,
@@ -222,7 +207,7 @@ impl WhereClause {
                 if i > 0 {
                     query.push_str(", ");
                 }
-                query.push_str(&format!("'{}'", value));
+                query.push_str(&format!("'{value}'"));
             }
             query.push(')');
         } else {
@@ -251,7 +236,6 @@ mod tests {
     #[test]
     fn test_empty_query() {
         let query = qb_sql!(select * from Customer);
-        assert_eq!(query.fields.len(), 0);
         assert_eq!(query.condition.len(), 0);
         assert_eq!(query.order.len(), 0);
         assert!(query.limit.is_none());
@@ -278,18 +262,6 @@ mod tests {
         );
 
         assert_eq!(query.condition.len(), 2);
-    }
-
-    #[test]
-    fn test_field_selection() {
-        let query = qb_sql!(
-            select display_name, balance from Customer
-            where display_name like "John%"
-        );
-
-        assert_eq!(query.fields.len(), 2);
-        assert_eq!(query.fields[0], "DisplayName");
-        assert_eq!(query.fields[1], "Balance");
     }
 
     #[test]
@@ -323,7 +295,7 @@ mod tests {
     #[test]
     fn test_query_string_generation() {
         let query = qb_sql!(
-            select display_name, balance from Customer
+            select * from Customer
             where display_name like "John%"
             and id in (1, 2, 3)
             and balance >= 1000.0
@@ -332,7 +304,7 @@ mod tests {
         );
 
         let query_string = query.query_string();
-        let expected = "select DisplayName, Balance from Customer where DisplayName LIKE 'John%' and Id IN ('1', '2', '3') and Balance >= '1000' order by DisplayName ASC, Balance DESC LIMIT 10 OFFSET 5";
+        let expected = "select * from Customer where DisplayName LIKE 'John%' and Id IN ('1', '2', '3') and Balance >= '1000' order by DisplayName ASC, Balance DESC LIMIT 10 OFFSET 5";
         assert_eq!(query_string, expected);
     }
 
@@ -360,7 +332,7 @@ mod tests {
         let title1 = "Mr";
         let title2 = "Mrs";
         let query = qb_sql!(
-            select display_name from Customer
+            select * from Customer
             where title in (title1, title2, "Dr")
         );
 
@@ -370,7 +342,7 @@ mod tests {
         let query_string = query.query_string();
         assert_eq!(
             query_string,
-            "select DisplayName from Customer where Title IN ('Mr', 'Mrs', 'Dr')"
+            "select * from Customer where Title IN ('Mr', 'Mrs', 'Dr')"
         );
     }
 
