@@ -2,6 +2,12 @@
 name = "quick-oxibooks-sql-macro"
 version = "0.1.0"
 edition = "2024"
+description = "A procedural macro to construct type-checked and safe SQL queries for Oxibooks."
+license = "MIT"
+authors = ["@exotik850"]
+keywords = ["quickbooks", "quickbooks-online", "api", "macro", "procedural-macro"]
+categories = ["api-bindings", "web-programming"]
+repository = "https://github.com/exotik850/quick-oxibooks-sql"
 
 [lib]
 proc-macro = true
