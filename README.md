@@ -24,6 +24,7 @@ let min_balance = 1000.0;
 let ids = vec!["1", "2", "3"];
 
 // You can pass in an iterator or a slice for the `in` clause, or a tuple of literals.
+// (notice that a singular value is only allowed for iterators, not for literals)
 let query = qb_sql!(
     select display_name, balance from Customer
     where balance >= min_balance
