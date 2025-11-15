@@ -5,12 +5,13 @@ edition = "2024"
 authors = ["@exotik850"]
 description = "A library to construct type-checked and safe SQL queries for Oxibooks."
 license = "MIT"
+repository = "https://github.com/exotik850/quick-oxibooks-sql"
 keywords = ["quickbooks", "quickbooks-online", "api", "client", "rust"]
 categories = ["api-clients", "web-programming"]
 
 [dependencies]
 quickbooks-types = "0.1.1"
-quick-oxibooks-sql-macro = { path = "./quick-oxibooks-sql-macro" }
+quick-oxibooks-sql-macro = "0.1.0"
 quick-oxibooks = { version = "0.1.2", optional = true }
 ureq = { version = "3.0", optional = true }
 
