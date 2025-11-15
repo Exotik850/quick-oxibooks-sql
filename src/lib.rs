@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 // Re-export the procedural macro
 pub use quick_oxibooks_sql_macro::qb_sql;
 use quickbooks_types::QBItem;
@@ -23,26 +25,43 @@ impl<QB: QBItem> Query<QB> {
         }
     }
 
+    /// Add a field to select in the query
+    ///
+    /// # Safety
+    /// This function is unsafe because it accepts a raw string slice as the field name.
+    /// The caller must ensure that the field name is valid and corresponds to a field in the QuickBooks entity.
     pub unsafe fn field(mut self, field: &'static str) -> Self {
         self.fields.push(field);
         self
     }
 
+    /// Add a condition to the query
+    ///
+    /// # Safety
+    /// This function is unsafe because it accepts a raw `WhereClause`.
+    /// The caller must ensure that the `WhereClause` is valid and corresponds to the QuickBooks entity.
     pub unsafe fn condition(mut self, condition: WhereClause) -> Self {
         self.condition.push(condition);
         self
     }
 
+    /// Add an order clause to the query
+    ///
+    /// # Safety
+    /// This function is unsafe because it accepts a raw string slice as the field name.
+    /// The caller must ensure that the field name is valid and corresponds to a field in the QuickBooks entity.
     pub unsafe fn order(mut self, field: &'static str, order: Order) -> Self {
         self.order.push(OrderClause { field, order });
         self
     }
 
+    /// Set a limit on the number of results returned by the query
     pub fn limit(mut self, number: u32, offset: Option<u32>) -> Self {
         self.limit = Some(Limit { number, offset });
         self
     }
 
+    /// Generate the query string
     pub fn query_string(&self) -> String {
         let mut query = String::new();
 
@@ -89,11 +108,14 @@ impl<QB: QBItem> Query<QB> {
     }
 
     #[cfg(feature = "api")]
+    /// Execute the query against the QuickBooks API, returning a vector of results or an error
     pub fn execute(
         &self,
         qb: &quick_oxibooks::QBContext,
         client: &ureq::Agent,
     ) -> Result<Vec<QB>, quick_oxibooks::error::APIError> {
+        // Safety: The query has been constructed using the provided methods,
+        // ensuring that it is valid for the QuickBooks entity QB.
         unsafe { quick_oxibooks::functions::query::qb_query_raw::<QB>(self, qb, client) }
     }
 }
@@ -104,7 +126,7 @@ impl<QB: QBItem> std::fmt::Display for Query<QB> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 struct Limit {
     number: u32,
     offset: Option<u32>,
