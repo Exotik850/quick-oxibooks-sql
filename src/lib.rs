@@ -15,6 +15,7 @@ pub struct Query<QB> {
 }
 
 impl<QB: QBItem> Query<QB> {
+    /// Create a new empty query
     pub fn new() -> Self {
         Query {
             fields: Vec::new(),
@@ -141,8 +142,9 @@ impl Limit {
     }
 }
 
+/// Struct representing an order clause in a query
 #[derive(Debug, PartialEq, Clone)]
-pub struct OrderClause {
+struct OrderClause {
     field: &'static str,
     order: Order,
 }
@@ -160,17 +162,46 @@ impl OrderClause {
     }
 }
 
+/// Enum representing the order direction in a query
 #[derive(Debug, PartialEq, Clone)]
 pub enum Order {
     Asc,
     Desc,
 }
 
+/// Struct representing a where clause in a query
 #[derive(Debug, PartialEq, Clone)]
 pub struct WhereClause {
     pub field: &'static str,
     pub operator: Operator,
     pub values: Vec<String>,
+}
+
+impl WhereClause {
+    /// Create a new where clause
+    pub fn new(field: &'static str, operator: Operator) -> Self {
+        Self {
+            field,
+            operator,
+            values: Vec::new(),
+        }
+    }
+
+    /// Add a value to the where clause
+    pub fn add_value<T: Display>(mut self, value: T) -> Self {
+        self.values.push(value.to_string());
+        self
+    }
+
+    /// Add multiple values to the where clause from an iterator
+    pub fn add_values<I, T>(mut self, values: I) -> Self
+    where
+        I: Iterator<Item = T>,
+        T: Display,
+    {
+        self.values.extend(values.map(|v| v.to_string()));
+        self
+    }
 }
 
 impl WhereClause {
@@ -200,6 +231,7 @@ impl WhereClause {
     }
 }
 
+/// Enum representing the operators used in where clauses
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     In,
