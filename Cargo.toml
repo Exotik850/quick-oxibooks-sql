@@ -7,7 +7,7 @@ description = "A library to construct type-checked and safe SQL queries for Oxib
 license = "MIT"
 repository = "https://github.com/exotik850/quick-oxibooks-sql"
 keywords = ["quickbooks", "quickbooks-online", "api", "client", "rust"]
-categories = ["api-clients", "web-programming"]
+categories = ["api-bindings", "web-programming"]
 
 [dependencies]
 quickbooks-types = "0.1.1"
