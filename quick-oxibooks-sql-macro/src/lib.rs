@@ -100,22 +100,57 @@ pub fn qb_sql(input: TokenStream) -> TokenStream {
 
 /// Represents the entire SQL query
 struct SqlQuery {
-    fields: FieldSelection,
     item_type: Type,
     conditions: Vec<Condition>,
     order_by: Option<OrderBy>,
     limit: Option<LimitClause>,
 }
 
-/// Field selection (SELECT * or SELECT field1, field2, ...)
-enum FieldSelection {
-    All,
-    Specific(Vec<Ident>),
+/// Represents a field, possibly nested (e.g., address.city)
+enum Field {
+    Root(Ident),
+    Nested(Ident, Box<Field>),
+}
+
+impl Parse for Field {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let root: Ident = input.parse()?;
+        if !input.peek(Token![.]) {
+            return Ok(Field::Root(root));
+        }
+        input.parse::<Token![.]>()?;
+        let nested = Field::parse(input)?;
+        Ok(Field::Nested(root, Box::new(nested)))
+    }
+}
+
+impl ToString for Field {
+    fn to_string(&self) -> String {
+        match self {
+            Field::Root(ident) => ident.to_string(),
+            Field::Nested(ident, nested) => format!("{}.{}", ident, nested.to_string()),
+        }
+    }
+}
+
+impl quote::ToTokens for Field {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        match self {
+            Field::Root(ident) => {
+                ident.to_tokens(tokens);
+            }
+            Field::Nested(ident, nested) => {
+                ident.to_tokens(tokens);
+                tokens.extend(quote! { . });
+                nested.to_tokens(tokens);
+            }
+        }
+    }
 }
 
 /// A single WHERE condition
 struct Condition {
-    field: Ident,
+    field: Field,
     operator: Operator,
     values: Vec<syn::Expr>,
 }
@@ -137,7 +172,7 @@ struct OrderBy {
 }
 
 struct OrderField {
-    field: Ident,
+    field: Field,
     direction: Option<OrderDirection>,
 }
 
@@ -154,24 +189,14 @@ struct LimitClause {
 
 impl Parse for SqlQuery {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        // Parse SELECT
+        // Parse select * from
         input.parse::<kw::select>()?;
-
-        // Parse field selection
-        let fields = if input.peek(Token![*]) {
-            input.parse::<Token![*]>()?;
-            FieldSelection::All
-        } else {
-            let field_list = Punctuated::<Ident, Token![,]>::parse_separated_nonempty(input)?;
-            FieldSelection::Specific(field_list.into_iter().collect())
-        };
-
-        // Parse FROM
+        input.parse::<Token![*]>()?;
         input.parse::<kw::from>()?;
+
         let item_type: Type = input.parse()?;
 
         let mut conditions = vec![];
-
         if input.peek(Token![where]) {
             // Parse WHERE
             input.parse::<Token![where]>()?;
@@ -199,7 +224,6 @@ impl Parse for SqlQuery {
         };
 
         Ok(SqlQuery {
-            fields,
             item_type,
             conditions,
             order_by,
@@ -210,7 +234,7 @@ impl Parse for SqlQuery {
 
 impl Parse for Condition {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let field: Ident = input.parse()?;
+        let field: Field = input.parse()?;
         let operator = Operator::parse(input)?;
 
         let values = if matches!(operator, Operator::In) {
@@ -282,7 +306,7 @@ impl Parse for OrderBy {
 
 impl Parse for OrderField {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let field: Ident = input.parse()?;
+        let field: Field = input.parse()?;
 
         let direction = if input.peek(kw::asc) {
             input.parse::<kw::asc>()?;
@@ -319,12 +343,8 @@ impl SqlQuery {
         let item_type = &self.item_type;
 
         // Collect all fields for type checking
-        let all_fields: Vec<&Ident> = {
+        let all_fields: Vec<&Field> = {
             let mut fields = Vec::new();
-
-            if let FieldSelection::Specific(ref select_fields) = self.fields {
-                fields.extend(select_fields.iter());
-            }
 
             fields.extend(self.conditions.iter().map(|c| &c.field));
 
@@ -346,28 +366,6 @@ impl SqlQuery {
             }
         } else {
             quote! {}
-        };
-
-        // Generate field selection code
-        let field_code = match &self.fields {
-            FieldSelection::All => quote! {},
-            FieldSelection::Specific(fields) => {
-                let field_names: Vec<_> = fields
-                    .iter()
-                    .map(|f| {
-                        let name = to_camel_case(&f.to_string());
-                        quote! { stringify!(#name) }
-                    })
-                    .collect();
-
-                quote! {
-                    #(
-                        unsafe {
-                            query = query.field(#field_names);
-                        }
-                    )*
-                }
-            }
         };
 
         // Generate condition code
@@ -453,7 +451,6 @@ impl SqlQuery {
 
                 let mut query = Query::<#item_type>::new();
 
-                #field_code
                 #(#condition_code)*
                 #order_code
                 #limit_code
