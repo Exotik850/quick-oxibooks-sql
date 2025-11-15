@@ -86,16 +86,18 @@ impl Parse for SqlQuery {
         input.parse::<kw::from>()?;
         let item_type: Type = input.parse()?;
 
-        // Parse WHERE
-        input.parse::<Token![where]>()?;
+        let mut conditions = vec![];
 
-        // Parse first condition
-        let mut conditions = vec![Condition::parse(input)?];
-
-        // Parse additional AND conditions
-        while input.peek(kw::and) {
-            input.parse::<kw::and>()?;
+        if input.peek(Token![where]) {
+            // Parse WHERE
+            input.parse::<Token![where]>()?;
+            // Parse first condition
             conditions.push(Condition::parse(input)?);
+            // Parse additional AND conditions
+            while input.peek(kw::and) {
+                input.parse::<kw::and>()?;
+                conditions.push(Condition::parse(input)?);
+            }
         }
 
         // Parse optional ORDER BY

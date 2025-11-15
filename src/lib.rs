@@ -195,6 +195,15 @@ mod tests {
     use quickbooks_types::Customer;
 
     #[test]
+    fn test_empty_query() {
+        let query = qb_sql!(select * from Customer);
+        assert_eq!(query.fields.len(), 0);
+        assert_eq!(query.condition.len(), 0);
+        assert_eq!(query.order.len(), 0);
+        assert!(query.limit.is_none());
+    }
+
+    #[test]
     fn test_basic_query() {
         let query = qb_sql!(
             select * from Customer
