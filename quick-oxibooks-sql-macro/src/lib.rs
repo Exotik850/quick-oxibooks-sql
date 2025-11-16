@@ -7,10 +7,10 @@ use syn::{
 
 use crate::query::SqlQuery;
 
+mod condition;
 mod limit;
 mod orderby;
 mod query;
-mod condition;
 
 /// Builds a type-safe QuickBooks Online query at compile time.
 ///

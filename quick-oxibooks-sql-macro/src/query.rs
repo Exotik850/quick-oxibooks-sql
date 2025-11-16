@@ -187,22 +187,3 @@ impl SqlQuery {
         }
     }
 }
-
-/// Convert snake_case to CamelCase and return a Member chain
-fn to_camel_case(s: &str) -> Vec<syn::Ident> {
-    s.split('.')
-        .map(|part| {
-            let camel: String = part
-                .split('_')
-                .map(|word| {
-                    let mut c = word.chars();
-                    match c.next() {
-                        None => String::new(),
-                        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-                    }
-                })
-                .collect();
-            syn::Ident::new(&camel, proc_macro2::Span::call_site())
-        })
-        .collect()
-}
