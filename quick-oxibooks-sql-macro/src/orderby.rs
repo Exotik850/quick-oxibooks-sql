@@ -1,8 +1,10 @@
 use syn::{
-    Token, parse::{Parse, ParseStream}, punctuated::Punctuated
+    Token,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
 };
 
-use crate::{Field, kw};
+use crate::{OptionField, kw};
 
 /// ORDER BY clause
 pub struct OrderBy {
@@ -10,7 +12,7 @@ pub struct OrderBy {
 }
 
 pub struct OrderField {
-    pub(crate) field: Field,
+    pub(crate) field: OptionField,
     pub(crate) direction: Option<OrderDirection>,
 }
 
@@ -34,7 +36,7 @@ impl Parse for OrderBy {
 
 impl Parse for OrderField {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let field: Field = input.parse()?;
+        let field: OptionField = input.parse()?;
 
         let direction = if input.peek(kw::asc) {
             input.parse::<kw::asc>()?;

@@ -104,47 +104,66 @@ pub fn qb_sql(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Represents a ExprField that is type checked with options for nested fields
+///
+/// At least one field is required, and additional fields can be chained using dot notation.
+/// For example: `field1.field2.field3`
+struct OptionField(Vec<Ident>);
 
-/// Represents a field, possibly nested (e.g., address.city)
-enum Field {
-    Root(Ident),
-    Nested(Ident, Box<Field>),
-}
-
-impl Parse for Field {
+impl Parse for OptionField {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let root: Ident = input.parse()?;
-        if !input.peek(Token![.]) {
-            return Ok(Field::Root(root));
+        let mut idents = Vec::new();
+
+        // Parse the first identifier
+        idents.push(input.parse::<Ident>()?);
+
+        // Parse any additional identifiers separated by dots
+        while input.peek(Token![.]) {
+            input.parse::<Token![.]>()?;
+            idents.push(input.parse::<Ident>()?);
         }
-        input.parse::<Token![.]>()?;
-        let nested = Field::parse(input)?;
-        Ok(Field::Nested(root, Box::new(nested)))
+
+        Ok(OptionField(idents))
     }
 }
 
-impl ToString for Field {
+fn snake_to_camel_case(s: &str) -> String {
+    s.split('_')
+        .map(|word| {
+            let mut c = word.chars();
+            match c.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+            }
+        })
+        .collect()
+}
+
+impl ToString for OptionField {
     fn to_string(&self) -> String {
-        match self {
-            Field::Root(ident) => ident.to_string(),
-            Field::Nested(ident, nested) => format!("{}.{}", ident, nested.to_string()),
-        }
+        self.0
+            .iter()
+            .map(|ident| snake_to_camel_case(&ident.to_string()))
+            .collect::<Vec<String>>()
+            .join(".")
     }
 }
 
-// Type Check for Field
-impl quote::ToTokens for Field {
+// Type Check for OptionExprField
+impl quote::ToTokens for OptionField {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            Field::Root(ident) => {
-                ident.to_tokens(tokens);
-            }
-            Field::Nested(ident, nested) => {
-                ident.to_tokens(tokens);
-                tokens.extend(quote! { .unwrap() });
-                nested.to_tokens(tokens);
-            }
+        if self.0.is_empty() {
+            return;
         }
+
+        let mut iter = self.0.iter();
+        let first = iter.next().unwrap();
+
+        let combined = iter.fold(quote! { #first }, |acc, ident| {
+            quote! { #acc .unwrap(). #ident }
+        });
+
+        tokens.extend(combined);
     }
 }
 

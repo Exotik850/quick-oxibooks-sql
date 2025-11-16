@@ -5,7 +5,7 @@ use syn::{
 };
 
 use crate::{
-    Field,
+    OptionField,
     condition::{Condition, Operator},
     kw,
     limit::LimitClause,
@@ -70,7 +70,7 @@ impl SqlQuery {
         let item_type = &self.item_type;
 
         // Collect all fields for type checking
-        let all_fields: Vec<&Field> = {
+        let all_fields: Vec<&OptionField> = {
             let mut fields = Vec::new();
 
             fields.extend(self.conditions.iter().map(|c| &c.field));
@@ -101,7 +101,6 @@ impl SqlQuery {
             .iter()
             .map(|c| {
                 let field = &c.field;
-                let field_name = to_camel_case(&field.to_string());
                 let operator = c.operator.to_tokens();
                 let values = &c.values;
 
@@ -116,9 +115,10 @@ impl SqlQuery {
                     quote! { vec![#(#values.to_string()),*] }
                 };
 
+                let field_str = field.to_string();
                 quote! {
                     let clause = WhereClause {
-                        field: stringify!(#field_name),
+                        field: #field_str,
                         operator: #operator,
                         values: #values_code,
                     };
@@ -136,7 +136,7 @@ impl SqlQuery {
                 .iter()
                 .map(|o| {
                     let field = &o.field;
-                    let field_name = to_camel_case(&field.to_string());
+                    let field_str = field.to_string();
                     let direction = match &o.direction {
                         Some(OrderDirection::Asc) => quote! { Order::Asc },
                         Some(OrderDirection::Desc) => quote! { Order::Desc },
@@ -145,7 +145,7 @@ impl SqlQuery {
 
                     quote! {
                         unsafe {
-                            query = query.order(stringify!(#field_name), #direction);
+                            query = query.order(#field_str, #direction);
                         }
                     }
                 })
@@ -188,18 +188,21 @@ impl SqlQuery {
     }
 }
 
-/// Convert snake_case to CamelCase
-fn to_camel_case(s: &str) -> syn::Ident {
-    let camel = s
-        .split('_')
-        .map(|word| {
-            let mut chars = word.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-            }
+/// Convert snake_case to CamelCase and return a Member chain
+fn to_camel_case(s: &str) -> Vec<syn::Ident> {
+    s.split('.')
+        .map(|part| {
+            let camel: String = part
+                .split('_')
+                .map(|word| {
+                    let mut c = word.chars();
+                    match c.next() {
+                        None => String::new(),
+                        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                    }
+                })
+                .collect();
+            syn::Ident::new(&camel, proc_macro2::Span::call_site())
         })
-        .collect::<String>();
-
-    syn::Ident::new(&camel, proc_macro2::Span::call_site())
+        .collect()
 }

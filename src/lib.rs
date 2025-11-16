@@ -365,4 +365,21 @@ mod tests {
             "select * from Customer where Id IN ('1', '2', '3', '4', '5')"
         );
     }
+
+    #[test]
+    fn test_nested_fields() {
+        let query = qb_sql!(
+            select * from Customer
+            where primary_email_addr.address like "%@example.com"
+        );
+
+        assert_eq!(query.condition.len(), 1);
+        assert_eq!(query.condition[0].field, "PrimaryEmailAddr.Address");
+
+        let query_string = query.query_string();
+        assert_eq!(
+            query_string,
+            "select * from Customer where PrimaryEmailAddr.Address LIKE '%@example.com'"
+        );
+    }
 }

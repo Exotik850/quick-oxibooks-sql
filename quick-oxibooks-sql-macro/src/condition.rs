@@ -5,11 +5,11 @@ use syn::{
     punctuated::Punctuated,
 };
 
-use crate::{Field, kw};
+use crate::{OptionField, kw};
 
 /// A single WHERE condition
 pub struct Condition {
-    pub(crate) field: Field,
+    pub(crate) field: OptionField,
     pub(crate) operator: Operator,
     pub(crate) values: Vec<Expr>,
 }
@@ -41,7 +41,7 @@ impl Operator {
 
 impl Parse for Condition {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let field: Field = input.parse()?;
+        let field: OptionField = input.parse()?;
         let operator = Operator::parse(input)?;
 
         let values = if matches!(operator, Operator::In) {
