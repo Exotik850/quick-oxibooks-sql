@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::fmt::Write;
 
 // Re-export the procedural macro
 pub use quick_oxibooks_sql_macro::qb_sql;
@@ -21,7 +22,7 @@ impl<QB: QBItem> Default for Query<QB> {
 
 impl<QB: QBItem> Query<QB> {
     /// Create a new empty query
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Query {
             condition: Vec::new(),
@@ -36,7 +37,7 @@ impl<QB: QBItem> Query<QB> {
     /// # Safety
     /// This function is unsafe because it accepts a raw `WhereClause`.
     /// The caller must ensure that the `WhereClause` is valid and corresponds to the `QuickBooks` entity.
-    #[must_use] 
+    #[must_use]
     pub unsafe fn condition(mut self, condition: WhereClause) -> Self {
         self.condition.push(condition);
         self
@@ -47,21 +48,21 @@ impl<QB: QBItem> Query<QB> {
     /// # Safety
     /// This function is unsafe because it accepts a raw string slice as the field name.
     /// The caller must ensure that the field name is valid and corresponds to a field in the `QuickBooks` entity.
-    #[must_use] 
+    #[must_use]
     pub unsafe fn order(mut self, field: &'static str, order: Order) -> Self {
         self.order.push(OrderClause { field, order });
         self
     }
 
     /// Set a limit on the number of results returned by the query
-    #[must_use] 
+    #[must_use]
     pub fn limit(mut self, number: u32, offset: Option<u32>) -> Self {
         self.limit = Some(Limit { number, offset });
         self
     }
 
     /// Generate the query string
-    #[must_use] 
+    #[must_use]
     pub fn query_string(&self) -> String {
         let mut query = format!("select * from {}", QB::name());
 
@@ -94,6 +95,9 @@ impl<QB: QBItem> Query<QB> {
 
     #[cfg(feature = "api")]
     /// Execute the query against the `QuickBooks` API, returning a vector of results or an error
+    ///
+    /// # Errors
+    /// This function will return an error if the API request fails or if the response cannot be parsed.
     pub fn execute(
         &self,
         qb: &quick_oxibooks::QBContext,
@@ -119,9 +123,9 @@ struct Limit {
 
 impl Limit {
     fn extend_query(&self, query: &mut String) {
-        query.push_str(&format!(" LIMIT {}", self.number));
+        write!(query, " LIMIT {}", self.number).unwrap();
         if let Some(offset) = self.offset {
-            query.push_str(&format!(" OFFSET {offset}"));
+            write!(query, " OFFSET {offset}").unwrap();
         }
     }
 }
@@ -135,14 +139,16 @@ struct OrderClause {
 
 impl OrderClause {
     fn extend_query(&self, query: &mut String) {
-        query.push_str(&format!(
+        write!(
+            query,
             " {} {}",
             self.field,
             match self.order {
                 Order::Asc => "ASC",
                 Order::Desc => "DESC",
             }
-        ));
+        )
+        .unwrap();
     }
 }
 
@@ -163,7 +169,7 @@ pub struct WhereClause {
 
 impl WhereClause {
     /// Create a new where clause
-    #[must_use] 
+    #[must_use]
     pub fn new(field: &'static str, operator: Operator) -> Self {
         Self {
             field,
@@ -173,12 +179,14 @@ impl WhereClause {
     }
 
     /// Add a value to the where clause
+    #[must_use]
     pub fn add_value<T: Display>(mut self, value: T) -> Self {
         self.values.push(value.to_string());
         self
     }
 
     /// Add multiple values to the where clause from an iterator
+    #[must_use]
     pub fn add_values<I, T>(mut self, values: I) -> Self
     where
         I: Iterator<Item = T>,
@@ -202,16 +210,16 @@ impl WhereClause {
         };
 
         if self.operator == Operator::In {
-            query.push_str(&format!(" {} IN (", self.field));
+            write!(query, " {} IN (", self.field).unwrap();
             for (i, value) in self.values.iter().enumerate() {
                 if i > 0 {
                     query.push_str(", ");
                 }
-                query.push_str(&format!("'{value}'"));
+                write!(query, "'{value}'").unwrap();
             }
             query.push(')');
         } else {
-            query.push_str(&format!(" {} {} '{}'", self.field, op_str, self.values[0]));
+            write!(query, " {} {} '{}'", self.field, op_str, self.values[0]).unwrap();
         }
     }
 }

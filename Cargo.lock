@@ -555,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "quick-oxibooks-sql"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "quick-oxibooks",
  "quick-oxibooks-sql-macro",
@@ -565,9 +565,7 @@ dependencies = [
 
 [[package]]
 name = "quick-oxibooks-sql-macro"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e53531b5308d0d73f2b522a27398b9b6c3e4b01b7749103756ebec98a67b236"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
