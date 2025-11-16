@@ -6,21 +6,8 @@ pub use quick_oxibooks_sql_macro::qb_sql;
 
 mod query;
 pub use query::Query;
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-struct Limit {
-    number: u32,
-    offset: Option<u32>,
-}
-
-impl Limit {
-    fn extend_query(&self, query: &mut String) {
-        write!(query, " LIMIT {}", self.number).unwrap();
-        if let Some(offset) = self.offset {
-            write!(query, " OFFSET {offset}").unwrap();
-        }
-    }
-}
+mod limit;
+pub(crate) use limit::Limit;
 
 /// Struct representing an order clause in a query
 #[derive(Debug, PartialEq, Clone)]
