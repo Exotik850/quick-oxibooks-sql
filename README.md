@@ -10,7 +10,7 @@
 
 ## Usage
 
-This crate provides two primary macros for building QuickBooks Online queries: `qb_sql!` and `qb_sql_str!`.
+This crate provides a macro for building QuickBooks Online queries: `qb_sql!`.
 
 ### Building a Query Object with `qb_sql!`
 
