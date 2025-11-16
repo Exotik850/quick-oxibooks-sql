@@ -8,35 +8,8 @@ mod query;
 pub use query::Query;
 mod limit;
 pub(crate) use limit::Limit;
-
-/// Struct representing an order clause in a query
-#[derive(Debug, PartialEq, Clone)]
-struct OrderClause {
-    field: &'static str,
-    order: Order,
-}
-
-impl OrderClause {
-    fn extend_query(&self, query: &mut String) {
-        write!(
-            query,
-            " {} {}",
-            self.field,
-            match self.order {
-                Order::Asc => "ASC",
-                Order::Desc => "DESC",
-            }
-        )
-        .unwrap();
-    }
-}
-
-/// Enum representing the order direction in a query
-#[derive(Debug, PartialEq, Clone)]
-pub enum Order {
-    Asc,
-    Desc,
-}
+mod order;
+pub use order::{Order, OrderClause};
 
 /// Struct representing a where clause in a query
 #[derive(Debug, PartialEq, Clone)]
