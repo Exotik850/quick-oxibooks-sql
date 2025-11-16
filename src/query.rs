@@ -40,6 +40,15 @@ impl<QB: QBItem> Query<QB> {
         self
     }
 
+    /// Add a typed condition to the query
+    ///
+    /// This is safe because the typed where clause ensures that the field and values are valid for the `QuickBooks` entity.
+    #[must_use]
+    pub fn typed_condition(mut self, condition: crate::TypedWhereClause<QB>) -> Self {
+        self.condition.push(condition.into());
+        self
+    }
+
     /// Add an order clause to the query
     ///
     /// # Safety

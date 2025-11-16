@@ -1,6 +1,6 @@
 [package]
 name = "quick-oxibooks-sql"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 authors = ["@exotik850"]
 description = "A library to construct type-checked and safe SQL queries for Oxibooks."
@@ -11,13 +11,16 @@ categories = ["api-bindings", "web-programming"]
 
 [dependencies]
 quickbooks-types = "0.1.1"
-quick-oxibooks-sql-macro = { version = "0.3.0", path = "./quick-oxibooks-sql-macro" }
+quote = "1.0"
+quick-oxibooks-sql-macro = { version = "0.3.0", path = "./quick-oxibooks-sql-macro", optional = true }
 quick-oxibooks = { version = "0.1.2", optional = true }
 ureq = { version = "3.0", optional = true }
+pastey = {version = "0.1", optional = true }
 
 [features]
-default = ["api"]
+default = ["api", "macros"]
 api = ["dep:quick-oxibooks", "dep:ureq"]
+macros = ["dep:quick-oxibooks-sql-macro", "dep:pastey"]
 
 [workspace]
 members = [

@@ -78,6 +78,28 @@ let query = qb_sql!(
 let results = query.execute(&qb, &client)?;
 ```
 
+### Manual Query Construction
+
+If you prefer to construct queries manually without using the macro, you can disable the `macros` feature and create a `Query` object directly. However, using the `qb_sql!` macro is recommended for ease of use, as it handles parsing and validation for you. The functions related to the `Query` struct are available through `unsafe` blocks to indicate the potential for runtime errors if not used correctly.
+
+```rust
+use quick_oxibooks_sql::{Query, TypedWhereClause, Operator};
+use quickbooks_types::Customer;
+
+let query: Query<Customer> = unsafe {
+  Query::new().condition(
+      WhereClause {
+        field: "DisplayName",
+        operator: Operator::Like,
+        values: vec!["John%".into()],
+      }
+  )
+  .limit(10)
+  .order_by("DisplayName", true)
+};
+```
+
+
 ### Supported SQL Syntax
 
 The macros support a subset of SQL syntax relevant to the QuickBooks Online API:
