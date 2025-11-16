@@ -12,11 +12,11 @@ mod limit;
 mod orderby;
 mod query;
 
-/// Builds a type-safe QuickBooks Online query at compile time.
+/// Builds a type-safe `QuickBooks` Online query at compile time.
 ///
 /// This macro parses SQL-like syntax and generates a `Query<T>` struct that can be used to query
-/// the QuickBooks Online API. Field names are automatically validated at compile time and converted
-/// from snake_case to CamelCase to match QuickBooks naming conventions.
+/// the `QuickBooks` Online API. Field names are automatically validated at compile time and converted
+/// from `snake_case` to CamelCase to match `QuickBooks` naming conventions.
 ///
 /// # Syntax
 ///
@@ -93,7 +93,7 @@ mod query;
 ///
 /// # Notes
 ///
-/// - Field names are automatically converted from snake_case to CamelCase (e.g., `display_name` → `DisplayName`)
+/// - Field names are automatically converted from `snake_case` to CamelCase (e.g., `display_name` → `DisplayName`)
 /// - All field names are validated at compile time against the entity type
 /// - The generated query can be converted to a string with `.query_string()` or by displaying it
 /// - For the `in` operator, use a tuple for literals or a single iterator expression
@@ -104,11 +104,22 @@ pub fn qb_sql(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Represents a ExprField that is type checked with options for nested fields
+/// Represents a `ExprField` that is type checked with options for nested fields
 ///
 /// At least one field is required, and additional fields can be chained using dot notation.
 /// For example: `field1.field2.field3`
 struct OptionField(Vec<Ident>);
+
+impl OptionField {
+    fn to_camel_case_string(&self) -> String {
+        let camel_parts: Vec<String> = self
+            .0
+            .iter()
+            .map(|ident| snake_to_camel_case(&ident.to_string()))
+            .collect();
+        camel_parts.join(".")
+    }
+}
 
 impl Parse for OptionField {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -139,13 +150,9 @@ fn snake_to_camel_case(s: &str) -> String {
         .collect()
 }
 
-impl ToString for OptionField {
-    fn to_string(&self) -> String {
-        self.0
-            .iter()
-            .map(|ident| snake_to_camel_case(&ident.to_string()))
-            .collect::<Vec<String>>()
-            .join(".")
+impl std::fmt::Display for OptionField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_camel_case_string())
     }
 }
 

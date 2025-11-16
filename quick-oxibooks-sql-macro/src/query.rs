@@ -83,7 +83,9 @@ impl SqlQuery {
         };
 
         // Generate type checking code
-        let type_check = if !all_fields.is_empty() {
+        let type_check = if all_fields.is_empty() {
+            quote! {}
+        } else {
             quote! {
                 const _: () = {
                     fn _check_fields(v: #item_type) {
@@ -91,8 +93,6 @@ impl SqlQuery {
                     }
                 };
             }
-        } else {
-            quote! {}
         };
 
         // Generate condition code
@@ -138,9 +138,8 @@ impl SqlQuery {
                     let field = &o.field;
                     let field_str = field.to_string();
                     let direction = match &o.direction {
-                        Some(OrderDirection::Asc) => quote! { Order::Asc },
+                        Some(OrderDirection::Asc) | None => quote! { Order::Asc },
                         Some(OrderDirection::Desc) => quote! { Order::Desc },
-                        None => quote! { Order::Asc },
                     };
 
                     quote! {
