@@ -88,7 +88,8 @@ impl SqlQuery {
         } else {
             quote! {
                 const _: () = {
-                    fn _check_fields(v: #item_type) {
+                    use ::quick_oxibooks_sql::traits::*;
+                    fn _check_fields(v: &#item_type) {
                         #(let _ = v.#all_fields;)*
                     }
                 };

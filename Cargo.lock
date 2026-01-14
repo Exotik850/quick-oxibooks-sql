@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "quick-oxibooks-sql"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "pastey",
  "quick-oxibooks",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "quick-oxibooks-sql-macro"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -163,12 +163,20 @@ impl quote::ToTokens for OptionField {
             return;
         }
 
-        let mut iter = self.0.iter();
-        let first = iter.next().unwrap();
+        let fields = &self.0;
+        let first = &fields[0];
 
-        let combined = iter.fold(quote! { #first }, |acc, ident| {
-            quote! { #acc .unwrap(). #ident }
-        });
+        // Start with the first field, cloned and wrapped
+        // Cloning prevents move errors when multiple fields are accessed in check_fields
+        // Wrapping ensures we always start with a Vec for chaining
+        let mut combined = quote! { #first.clone()._qb_wrap() };
+
+        // Chain subsequent fields using _qb_access helper
+        for i in 1..fields.len() {
+            let item = &fields[i];
+
+            combined = quote! { #combined._qb_access(|v| v.#item.clone()._qb_wrap()) };
+        }
 
         tokens.extend(combined);
     }
