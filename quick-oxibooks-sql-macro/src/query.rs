@@ -176,6 +176,7 @@ impl SqlQuery {
             {
                 #type_check
 
+                use ::quick_oxibooks_sql::*;
                 let mut query = Query::<#item_type>::new();
 
                 #(#condition_code)*
